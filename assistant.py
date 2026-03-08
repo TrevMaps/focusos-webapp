@@ -1,10 +1,15 @@
-import pyttsx3
-
-engine = pyttsx3.init()
+try:
+    import pyttsx3
+    engine = pyttsx3.init()
+except:
+    engine = None
 
 def speak(text):
-    engine.say(text)
-    engine.runAndWait()
+    if engine:
+        engine.say(text)
+        engine.runAndWait()
+    else:
+        print(text)
 
 import openai
 
