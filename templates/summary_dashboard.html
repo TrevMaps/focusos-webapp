@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>FocusOS Dashboard</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<h1>FocusOS Dashboard</h1>
+
+<div class="taskbar">
+    <a href="/tasks" class="taskbar-link">Everyday Tasks</a>
+    <a href="/job_applications" class="taskbar-link">Work Applications</a>
+</div>
+
+<div class="container">
+<div class="section">
+<h2>Top Priority Tasks</h2>
+
+{% if top_tasks %}
+<ul>
+{% for task in top_tasks %}
+<li class="priority-{{ task[4] }}">
+    <strong>{{ task[1] }}</strong><br>
+    Due: {{ task[3] }}<br>
+    Priority: <span class="priority-label {{ task[4] }}">{{ task[4] | title }}</span>
+    <form action="/complete/{{ task[0] }}" method="post" style="display:inline;">
+    <button type="submit">Done</button>
+    </form>
+</li>
+{% endfor %}
+</ul>
+{% else %}
+<p>No pending tasks. Great job staying on top of things!</p>
+{% endif %}
+
+<p><a href="/tasks">View All Tasks →</a></p>
+</div>
+</div>
+
+</body>
+</html>

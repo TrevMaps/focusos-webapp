@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Everyday Tasks</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<h1>Everyday Tasks</h1>
+
+<div class="taskbar">
+    <a href="/" class="taskbar-link">Dashboard</a>
+    <a href="/job_applications" class="taskbar-link">Work Applications</a>
+</div>
+
+<div class="container">
+<div class="section">
+<h2>Your Tasks</h2>
+
+<ul>
+{% for task in tasks %}
+<li>{{ task[1] }} - Due: {{ task[3] }} - Priority: {{ task[4] }}
+<form action="/complete/{{ task[0] }}" method="post" style="display:inline;">
+<button type="submit">Done</button>
+</form>
+</li>
+{% endfor %}
+</ul>
+
+<h2>Add Task</h2>
+<form action="/add_task" method="post">
+<input type="text" name="task" placeholder="Enter task" required>
+<div class="date-time-wrapper">
+<div class="input-wrapper">
+<label for="due_date">Date:</label>
+<input type="date" id="due_date" name="due_date" required>
+</div>
+<div class="input-wrapper">
+<label for="due_time">Time:</label>
+<input type="time" id="due_time" name="due_time" required>
+</div>
+</div>
+<button type="submit">Add Task</button>
+</form>
+</div>
+
+<div class="section">
+<h2>Ask AI</h2>
+<form action="/ask" method="post">
+<input type="text" id="question" name="question" placeholder="Ask a question" required>
+<button type="submit">Ask AI</button>
+</form>
+<button onclick="startDictation()">Speak Question</button>
+
+{% if answer %}
+<h2>AI Answer</h2>
+<p id="answer-text">{{ answer }}</p>
+<a href="/speak/{{ answer|urlencode }}">Speak Answer</a>
+{% endif %}
+</div>
+</div>
+
+</body>
+</html>
+<script>
+function startDictation() {
+    if (window.hasOwnProperty('webkitSpeechRecognition')) {
+        var recognition = new webkitSpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = "en-US";
+        recognition.start();
+        recognition.onresult = function(e) {
+            document.getElementById('question').value = e.results[0][0].transcript;
+            recognition.stop();
+        };
+        recognition.onerror = function(e) {
+            recognition.stop();
+        };
+    } else {
+        alert('Speech recognition not supported in this browser.');
+    }
+}
+
+// Ensure date and time inputs are properly initialized
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.querySelector('input[type="date"]');
+    const timeInput = document.querySelector('input[type="time"]');
+    
+    if (dateInput) {
+        // Set default value to today if empty
+        if (!dateInput.value) {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            dateInput.value = `${yyyy}-${mm}-${dd}`;
+        }
+        
+        // Ensure picker opens on click in PyQt WebEngine
+        dateInput.addEventListener('click', function(e) {
+            e.stopPropagation();
+            this.focus();
+            this.click();
+        }, false);
+        
+        dateInput.addEventListener('focus', function() {
+            this.click();
+        }, false);
+    }
+    
+    if (timeInput) {
+        // Set default value to current time + 1 hour if empty
+        if (!timeInput.value) {
+            const now = new Date();
+            now.setHours(now.getHours() + 1);
+            const hh = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            timeInput.value = `${hh}:${min}`;
+        }
+        
+        // Ensure picker opens on click in PyQt WebEngine
+        timeInput.addEventListener('click', function(e) {
+            e.stopPropagation();
+            this.focus();
+            this.click();
+        }, false);
+        
+        timeInput.addEventListener('focus', function() {
+            this.click();
+        }, false);
+    }
+    
+    // Handle AI answer speech synthesis
+    const answerText = document.getElementById('answer-text');
+    if (answerText && answerText.textContent.trim()) {
+        try {
+            speechSynthesis.speak(new SpeechSynthesisUtterance(answerText.textContent));
+        } catch(e) {
+            console.log('Speech synthesis failed:', e);
+        }
+    }
+});
+</script>

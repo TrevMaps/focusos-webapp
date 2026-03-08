@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Work Applications</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<h1>Work Applications</h1>
+
+<div class="taskbar">
+    <a href="/" class="taskbar-link">Dashboard</a>
+    <a href="/tasks" class="taskbar-link">Everyday Tasks</a>
+</div>
+
+<div class="container">
+<div class="section">
+<h2>Your Job Applications</h2>
+
+<ul>
+{% for job in jobs %}
+<li>
+    <strong>{{ job[1] }}</strong><br>
+    Reference: {{ job[2] }}<br>
+    Status: <span class="status-badge status-{{ job[3] }}">{{ job[3] | title }}</span>
+    <div style="margin-top: 15px;">
+        <select class="status-select" data-job-id="{{ job[0] }}" data-current-status="{{ job[3] }}">
+            <option value="pending" {% if job[3] == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="accepted" {% if job[3] == 'accepted' %}selected{% endif %}>Accepted</option>
+            <option value="rejected" {% if job[3] == 'rejected' %}selected{% endif %}>Rejected</option>
+        </select>
+    </div>
+</li>
+{% endfor %}
+</ul>
+</div>
+
+<div class="section">
+<h2>Add Job Application</h2>
+<form action="/add_job" method="post">
+<input type="text" name="job_name" placeholder="Job Name" required>
+<input type="text" name="reference_number" placeholder="Reference Number" required>
+<select name="status">
+<option value="pending">Pending</option>
+<option value="accepted">Accepted</option>
+<option value="rejected">Rejected</option>
+</select>
+<button type="submit">Add Job</button>
+</form>
+</div>
+</div>
+</div>
+
+<!-- Congratulations Modal -->
+<div id="congratulationsModal" class="modal">
+    <div class="modal-content">
+        <h2>🎉 Congratulations Trevor!</h2>
+        <p>You've been accepted for a job opportunity!</p>
+        <p>Would you like to clear all applications and start fresh?</p>
+        <div class="modal-buttons">
+            <button id="acceptBtn" class="modal-button accept">Yes, Clear All</button>
+            <button id="declineBtn" class="modal-button decline">No, Keep Them</button>
+        </div>
+    </div>
+</div>
+
+<!-- Confetti Canvas -->
+<canvas id="confetti"></canvas>
+
+</body>
+</html>
+
+<script>
+// Confetti animation
+class Confetti {
+    constructor() {
+        this.canvas = document.getElementById('confetti');
+        this.ctx = this.canvas.getContext('2d');
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        this.particles = [];
+        this.animate = this.animate.bind(this);
+    }
+
+    createParticles() {
+        for (let i = 0; i < 100; i++) {
+            this.particles.push({
+                x: Math.random() * this.canvas.width,
+                y: -10,
+                size: Math.random() * 3 + 2,
+                speedX: Math.random() * 4 - 2,
+                speedY: Math.random() * 5 + 5,
+                rotation: Math.random() * 360,
+                rotationSpeed: Math.random() * 10 - 5,
+                color: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8'][Math.floor(Math.random() * 5)]
+            });
+        }
+    }
+
+    animate() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const p = this.particles[i];
+            p.y += p.speedY;
+            p.x += p.speedX;
+            p.rotation += p.rotationSpeed;
+            p.speedY += 0.1; // gravity
+
+            if (p.y > this.canvas.height) {
+                this.particles.splice(i, 1);
+                continue;
+            }
+
+            this.ctx.save();
+            this.ctx.translate(p.x, p.y);
+            this.ctx.rotate((p.rotation * Math.PI) / 180);
+            this.ctx.fillStyle = p.color;
+            this.ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+            this.ctx.restore();
+        }
+
+        if (this.particles.length > 0) {
+            requestAnimationFrame(this.animate);
+        } else {
+            this.canvas.style.display = 'none';
+        }
+    }
+
+    start() {
+        this.canvas.style.display = 'block';
+        this.createParticles();
+        this.animate();
+    }
+}
+
+// Status change handler
+document.querySelectorAll('.status-select').forEach(select => {
+    select.addEventListener('change', function() {
+        const jobId = this.dataset.jobId;
+        const previousStatus = this.dataset.currentStatus;
+        const newStatus = this.value;
+
+        if (newStatus === 'rejected') {
+            // Delete immediately for rejected
+            if (confirm('Delete this application?')) {
+                fetch(`/delete_job/${jobId}`, { method: 'POST' })
+                    .then(() => location.reload())
+                    .catch(err => console.error('Error:', err));
+            } else {
+                this.value = previousStatus;
+            }
+        } else if (newStatus === 'accepted') {
+            // Show congratulations modal
+            const modal = document.getElementById('congratulationsModal');
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            
+            // Start confetti
+            const confetti = new Confetti();
+            confetti.start();
+
+            document.getElementById('acceptBtn').onclick = () => {
+                // Delete all jobs
+                fetch('/delete_all_jobs', { method: 'POST' })
+                    .then(() => location.reload())
+                    .catch(err => console.error('Error:', err));
+            };
+
+            document.getElementById('declineBtn').onclick = () => {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+                // Keep the accepted status and update
+                fetch(`/update_job_status/${jobId}`, { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `status=${newStatus}`
+                })
+                    .then(() => location.reload())
+                    .catch(err => console.error('Error:', err));
+            };
+        } else {
+            // Update to pending
+            fetch(`/update_job_status/${jobId}`, { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `status=${newStatus}`
+            })
+                .then(() => location.reload())
+                .catch(err => console.error('Error:', err));
+        }
+    });
+});
+</script>
