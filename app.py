@@ -12,9 +12,14 @@ cursor.execute("""
 CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY,
     task TEXT,
-    status TEXT
+    status TEXT,
+    priority INTEGER
 )
 """)
+try:
+    cursor.execute("ALTER TABLE tasks ADD COLUMN priority INTEGER")
+except:
+    pass
 
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS job_applications (
