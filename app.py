@@ -13,7 +13,9 @@ CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY,
     task TEXT,
     status TEXT,
-    priority INTEGER
+    priority INTEGER,
+    due_date TEXT,
+    due_time TEXT
 )
 """)
 try:
