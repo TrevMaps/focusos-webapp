@@ -1,5 +1,10 @@
 import sqlite3
+import os
+from flask import Flask, render_template, request, redirect, url_for
+from tasks import get_tasks, add_task, get_job_applications, add_job_application, update_job_status, get_top_priority_tasks, delete_job_application, delete_all_job_applications
+from assistant import ask_ai, speak
 
+# Initialize database
 conn = sqlite3.connect("database.db")
 cursor = conn.cursor()
 
@@ -22,10 +27,6 @@ CREATE TABLE IF NOT EXISTS job_applications (
 
 conn.commit()
 conn.close()
-
-from flask import Flask, render_template, request, redirect, url_for
-from tasks import get_tasks, add_task, get_job_applications, add_job_application, update_job_status, get_top_priority_tasks, delete_job_application, delete_all_job_applications
-from assistant import ask_ai, speak
 
 app = Flask(__name__)
 
@@ -102,53 +103,8 @@ def delete_all_jobs_route():
     delete_all_job_applications()
     return {'status': 'success'}, 200
 
+
+# Run Flask (for Render deployment)
 if __name__ == "__main__":
-    import threading
-    from PyQt6.QtWidgets import QApplication, QMainWindow
-    from PyQt6.QtWebEngineWidgets import QWebEngineView
-    from PyQt6.QtWebEngineCore import QWebEngineSettings
-    from PyQt6.QtCore import QUrl
-    import sys
-
-    def run_flask():
-        app.run(debug=True, use_reloader=False, host='127.0.0.1', port=5000)
-
-    flask_thread = threading.Thread(target=run_flask)
-    flask_thread.daemon = True
-    flask_thread.start()
-
-    # Wait a moment for Flask to start
-    import time
-    time.sleep(1)
-
-    print("Starting PyQt application...")
-    qt_app = QApplication(sys.argv)
-    window = QMainWindow()
-    window.setWindowTitle('FocusOS')
-    window.setGeometry(100, 100, 800, 600)
-    
-    webview = QWebEngineView()
-    
-    # Enable HTML5 features for better input support
-    settings = webview.settings()
-    settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled, True)
-    settings.setAttribute(QWebEngineSettings.WebAttribute.LocalStorageEnabled, True)
-    settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptCanOpenWindows, True)
-    settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptCanAccessClipboard, True)
-    settings.setAttribute(QWebEngineSettings.WebAttribute.TouchIconsEnabled, True)
-    settings.setAttribute(QWebEngineSettings.WebAttribute.SpatialNavigationEnabled, True)
-    settings.setAttribute(QWebEngineSettings.WebAttribute.ShowScrollBars, True)
-    settings.setAttribute(QWebEngineSettings.WebAttribute.ScreenCaptureEnabled, False)
-    settings.setAttribute(QWebEngineSettings.WebAttribute.WebGLEnabled, True)
-    settings.setAttribute(QWebEngineSettings.WebAttribute.DnsPrefetchEnabled, True)
-    
-    webview.load(QUrl('http://127.0.0.1:5000/'))
-    window.setCentralWidget(webview)
-
-    print("Showing window...")
-    window.show()
-    window.raise_()  # Bring window to front
-    window.activateWindow()  # Activate the window
-    
-    print("FocusOS application started. Window should be visible on top.")
-    sys.exit(qt_app.exec())
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
