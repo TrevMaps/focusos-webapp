@@ -22,6 +22,14 @@ try:
     cursor.execute("ALTER TABLE tasks ADD COLUMN priority INTEGER")
 except:
     pass
+try:
+    cursor.execute("ALTER TABLE tasks ADD COLUMN due_date TEXT")
+except:
+    pass
+try:
+    cursor.execute("ALTER TABLE tasks ADD COLUMN due_time TEXT")
+except:
+    pass
 
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS job_applications (
