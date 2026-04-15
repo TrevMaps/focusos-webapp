@@ -2,3 +2,5 @@ flask
 gunicorn
 pyttsx3
 openai
+flask-login
+werkzeug

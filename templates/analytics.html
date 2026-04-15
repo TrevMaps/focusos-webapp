@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Analytics - FocusOS</title>
+<link rel="stylesheet" href="/static/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<!-- Navigation Bar -->
+<nav class="navbar">
+    <div class="navbar-container">
+        <a href="/" class="navbar-brand">
+            <i class="fas fa-rocket"></i>
+            FocusOS
+        </a>
+        
+        <div class="navbar-center">
+            <ul class="navbar-nav">
+                <li><a href="/"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="/tasks"><i class="fas fa-tasks"></i> Tasks</a></li>
+                <li><a href="/job_applications"><i class="fas fa-briefcase"></i> Applications</a></li>
+            </ul>
+        </div>
+        
+        <div class="navbar-right">
+            <button class="dark-mode-toggle" id="darkModeToggle" title="Toggle Dark Mode">
+                <i class="fas fa-moon"></i>
+            </button>
+            <a href="/logout" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="main-content">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1><i class="fas fa-chart-bar"></i> Analytics</h1>
+        <p>Deep dive into your productivity metrics and insights.</p>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="metrics-container">
+        <div class="metric-card">
+            <i class="fas fa-checkmark-circle" style="font-size: 2.5em; color: var(--success); margin-bottom: 0.5rem;"></i>
+            <div class="metric-value">{{ tasks_completed }}</div>
+            <div class="metric-label">Completed</div>
+        </div>
+        <div class="metric-card">
+            <i class="fas fa-hourglass-half" style="font-size: 2.5em; color: var(--warning); margin-bottom: 0.5rem;"></i>
+            <div class="metric-value">{{ tasks_pending }}</div>
+            <div class="metric-label">Pending</div>
+        </div>
+        <div class="metric-card">
+            <i class="fas fa-chart-pie" style="font-size: 2.5em; color: var(--primary); margin-bottom: 0.5rem;"></i>
+            <div class="metric-value">{{ completion_rate }}%</div>
+            <div class="metric-label">Completion Rate</div>
+        </div>
+        <div class="metric-card">
+            <i class="fas fa-paper-plane" style="font-size: 2.5em; color: var(--secondary); margin-bottom: 0.5rem;"></i>
+            <div class="metric-value">{{ applications_sent }}</div>
+            <div class="metric-label">Applications</div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-container">
+        <div class="chart-wrapper">
+            <div class="chart-title"><i class="fas fa-chart-doughnut"></i> Task Distribution</div>
+            <canvas id="tasksChart"></canvas>
+        </div>
+        
+        <div class="chart-wrapper">
+            <div class="chart-title"><i class="fas fa-chart-bar"></i> Completion Progress</div>
+            <canvas id="completionChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Task Completion Projection -->
+    {% if projection_data %}
+    <div class="dashboard-grid-full">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-robot"></i>
+                <h3>Task Completion Projection</h3>
+            </div>
+            <div class="card-content">
+                <p style="margin-bottom: 1.5rem; opacity: 0.8;">
+                    <i class="fas fa-lightbulb"></i> Estimated completion timeline based on current pace (2 tasks/day)
+                </p>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-tasks"></i> Task</th>
+                                <th><i class="fas fa-star"></i> Priority</th>
+                                <th><i class="fas fa-calendar"></i> Due Date</th>
+                                <th><i class="fas fa-hourglass-end"></i> Projected</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in projection_data %}
+                            <tr>
+                                <td>{{ item.task }}</td>
+                                <td><span class="priority-{{ item.priority }}">{{ item.priority | title }}</span></td>
+                                <td>{{ item.due_date }}</td>
+                                <td><strong>{{ item.projected_completion }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="dashboard-grid-full">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-robot"></i>
+                <h3>Task Completion Projection</h3>
+            </div>
+            <div class="card-content" style="text-align: center; opacity: 0.7;">
+                <p><i class="fas fa-inbox" style="font-size: 2em; margin-bottom: 1rem;"></i><br>No pending tasks to project.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Dark Mode Toggle
+const darkModeToggle = document.getElementById('darkModeToggle');
+const body = document.body;
+
+if (localStorage.getItem('darkMode') === 'enabled') {
+    body.classList.add('dark-mode');
+    darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+}
+
+darkModeToggle.addEventListener('click', function() {
+    body.classList.toggle('dark-mode');
+    if (body.classList.contains('dark-mode')) {
+        localStorage.setItem('darkMode', 'enabled');
+        darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+    } else {
+        localStorage.setItem('darkMode', 'disabled');
+        darkModeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+    }
+});
+
+// Charts
+document.addEventListener('DOMContentLoaded', function() {
+    // Tasks Chart
+    const tasksCtx = document.getElementById('tasksChart')?.getContext('2d');
+    if (tasksCtx) {
+        new Chart(tasksCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Completed', 'Pending'],
+                datasets: [{
+                    data: [{{ tasks_completed }}, {{ tasks_pending }}],
+                    backgroundColor: ['#10b981', '#f59e0b'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Completion Chart
+    const completionCtx = document.getElementById('completionChart')?.getContext('2d');
+    if (completionCtx) {
+        new Chart(completionCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Progress'],
+                datasets: [{
+                    label: 'Percentage',
+                    data: [{{ completion_rate }}],
+                    backgroundColor: ['#667eea'],
+                    borderWidth: 0,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+
+</body>
+</html>

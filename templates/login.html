@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Login - FocusOS</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body class="auth-page">
+
+<div class="auth-container">
+    <div class="auth-card">
+        <h1><i class="fas fa-rocket"></i> FocusOS</h1>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="flash-messages">
+        {% for message in messages %}
+            <div class="flash-message">
+                <i class="fas fa-exclamation-circle"></i>
+                {{ message }}
+            </div>
+        {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <form action="/login" method="post">
+            <div class="form-group">
+                <label for="username"><i class="fas fa-user"></i> Username</label>
+                <input type="text" id="username" name="username" placeholder="Enter your username" required>
+            </div>
+            <div class="form-group">
+                <label for="password"><i class="fas fa-lock"></i> Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="btn-primary" style="width: 100%;">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+        </form>
+
+        <p style="text-align: center; margin-top: 1.5rem;">
+            Don't have an account? <a href="/register"><i class="fas fa-user-plus"></i> Register here</a>
+        </p>
+    </div>
+</div>
+
+<script>
+// Dark Mode
+const body = document.body;
+
+if (localStorage.getItem('darkMode') === 'enabled') {
+    body.classList.add('dark-mode');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add dark mode toggle to navbar if available
+    if (document.querySelector('.dark-mode-toggle')) {
+        document.querySelector('.dark-mode-toggle').addEventListener('click', function() {
+            body.classList.toggle('dark-mode');
+            if (body.classList.contains('dark-mode')) {
+                localStorage.setItem('darkMode', 'enabled');
+            } else {
+                localStorage.setItem('darkMode', 'disabled');
+            }
+        });
+    }
+});
+</script>
+
+</body>
+</html>

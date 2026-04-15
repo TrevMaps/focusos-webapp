@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Tasks - FocusOS</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<!-- Navigation Bar -->
+<nav class="navbar">
+    <div class="navbar-container">
+        <a href="/" class="navbar-brand">
+            <i class="fas fa-rocket"></i>
+            FocusOS
+        </a>
+        
+        <div class="navbar-center">
+            <ul class="navbar-nav">
+                <li><a href="/"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="/tasks" class="active"><i class="fas fa-tasks"></i> Tasks</a></li>
+                <li><a href="/job_applications"><i class="fas fa-briefcase"></i> Applications</a></li>
+            </ul>
+        </div>
+        
+        <div class="navbar-right">
+            <button class="dark-mode-toggle" id="darkModeToggle" title="Toggle Dark Mode">
+                <i class="fas fa-moon"></i>
+            </button>
+            <a href="/logout" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="main-content">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1><i class="fas fa-tasks"></i> Everyday Tasks</h1>
+        <p>Manage your daily tasks and stay productive.</p>
+    </div>
+
+    <!-- Voice Command Section -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <div class="card-header">
+            <i class="fas fa-microphone"></i>
+            <h3>Voice Commands</h3>
+        </div>
+        <div class="card-content">
+            <button class="voice-command" id="voiceBtn">
+                <i class="fas fa-microphone"></i>
+                <span id="voiceText">Click to Speak</span>
+            </button>
+            <div class="voice-feedback" id="voiceFeedback" style="display: none;">
+                <p id="voiceMessage"></p>
+                <p class="voice-status" id="voiceStatus"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Your Tasks Section -->
+    <div class="dashboard-grid-full">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-list-check"></i>
+                <h3>Your Tasks</h3>
+            </div>
+            <div class="card-content">
+                {% if tasks %}
+                <ul class="task-list">
+                    {% for task in tasks %}
+                    {% set status = task[2] %}
+                    {% set priority = task[4] %}
+                    <li class="task-item {{ status }} priority-{{ priority }}">
+                        <div class="task-item-content">
+                            <div>
+                                <div class="task-title">{{ task[1] }}</div>
+                                <div class="task-meta">
+                                    <span><i class="fas fa-calendar"></i> {{ task[3].replace('T', ' ') }}</span>
+                                    <span><i class="fas fa-star"></i> <span class="priority-label {{ priority }}">{{ priority | title }}</span></span>
+                                    <span><i class="fas fa-info-circle"></i> <span class="status-badge status-{{ status }}">{{ status | title }}</span></span>
+                                </div>
+                            </div>
+                            <div class="task-actions">
+                                {% if status == 'pending' %}
+                                <form action="/complete/{{ task[0] }}" method="post" style="display:inline;">
+                                    <button type="submit" class="btn-primary btn-small">
+                                        <i class="fas fa-check"></i> Mark Complete
+                                    </button>
+                                </form>
+                                {% else %}
+                                <button class="btn-secondary btn-small" disabled>
+                                    <i class="fas fa-check-circle"></i> Completed
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p style="text-align: center; opacity: 0.7;">
+                    <i class="fas fa-inbox" style="font-size: 2em; margin-bottom: 1rem;"></i><br>
+                    No tasks yet. Let's add one!
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Task Section -->
+    <div class="dashboard-grid">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-plus-circle"></i>
+                <h3>Add New Task</h3>
+            </div>
+            <div class="card-content">
+                <form action="/add_task" method="post">
+                    <div class="form-group">
+                        <label for="task"><i class="fas fa-pen"></i> Task Description</label>
+                        <input type="text" id="task" name="task" placeholder="What needs to be done?" required>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label for="due_date"><i class="fas fa-calendar"></i> Due Date</label>
+                            <input type="date" id="due_date" name="due_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="due_time"><i class="fas fa-clock"></i> Due Time</label>
+                            <input type="time" id="due_time" name="due_time" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary" style="width: 100%;">
+                        <i class="fas fa-plus"></i> Add Task
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Ask AI Section -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-brain"></i>
+                <h3>Ask AI Assistant</h3>
+            </div>
+            <div class="card-content">
+                <form action="/ask" method="post">
+                    <div class="form-group">
+                        <label for="question"><i class="fas fa-question-circle"></i> Your Question</label>
+                        <input type="text" id="question" name="question" placeholder="Ask for productivity tips..." required>
+                    </div>
+                    <button type="submit" class="btn-secondary" style="width: 100%; margin-bottom: 1rem;">
+                        <i class="fas fa-paper-plane"></i> Ask AI
+                    </button>
+                    <button type="button" class="btn-secondary" style="width: 100%;" onclick="startDictation()">
+                        <i class="fas fa-microphone"></i> Speak Question
+                    </button>
+                </form>
+                {% if answer %}
+                <div style="margin-top: 1.5rem; padding: 1rem; background: var(--primary); color: white; border-radius: 8px;">
+                    <h4><i class="fas fa-lightbulb"></i> AI Response</h4>
+                    <p id="answer-text">{{ answer }}</p>
+                    <a href="/speak/{{ answer|urlencode }}" class="btn-secondary" style="display: inline-flex; margin-top: 1rem;">
+                        <i class="fas fa-volume-up"></i> Speak Answer
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Dark Mode Toggle
+const darkModeToggle = document.getElementById('darkModeToggle');
+const body = document.body;
+
+if (localStorage.getItem('darkMode') === 'enabled') {
+    body.classList.add('dark-mode');
+    darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+}
+
+darkModeToggle.addEventListener('click', function() {
+    body.classList.toggle('dark-mode');
+    if (body.classList.contains('dark-mode')) {
+        localStorage.setItem('darkMode', 'enabled');
+        darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+    } else {
+        localStorage.setItem('darkMode', 'disabled');
+        darkModeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+    }
+});
+
+// Voice Command Handler
+const voiceBtn = document.getElementById('voiceBtn');
+const voiceFeedback = document.getElementById('voiceFeedback');
+const voiceMessage = document.getElementById('voiceMessage');
+const voiceStatus = document.getElementById('voiceStatus');
+const voiceText = document.getElementById('voiceText');
+
+voiceBtn.addEventListener('click', function() {
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = 'en-US';
+    recognition.continuous = false;
+    
+    voiceBtn.classList.add('listening');
+    voiceText.textContent = 'Listening...';
+    voiceFeedback.style.display = 'none';
+    
+    recognition.onstart = function() {
+        voiceStatus.textContent = 'Recording...';
+    };
+    
+    recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        voiceStatus.textContent = `You said: "${transcript}"`;
+        
+        // Send voice command to server
+        fetch('/voice_command', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ command: transcript })
+        })
+        .then(response => response.json())
+        .then(data => {
+            voiceMessage.textContent = data.message;
+            voiceFeedback.style.display = 'block';
+            
+            if (data.action === 'add_task') {
+                voiceStatus.textContent = 'Task added successfully! ✓';
+                setTimeout(() => location.reload(), 2000);
+            } else if (data.redirect) {
+                voiceStatus.textContent = 'Redirecting...';
+                setTimeout(() => window.location.href = data.redirect, 1500);
+            }
+        })
+        .catch(err => {
+            voiceMessage.textContent = 'Error processing command';
+            voiceStatus.textContent = 'Please try again';
+            voiceFeedback.style.display = 'block';
+        });
+    };
+    
+    recognition.onerror = function(event) {
+        voiceMessage.textContent = 'Could not understand the command';
+        voiceStatus.textContent = 'Error: ' + event.error;
+        voiceFeedback.style.display = 'block';
+    };
+    
+    recognition.onend = function() {
+        voiceBtn.classList.remove('listening');
+        voiceText.textContent = 'Click to Speak';
+    };
+    
+    recognition.start();
+});
+
+// Speech Dictation for Question
+function startDictation() {
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = 'en-US';
+    recognition.continuous = false;
+    
+    recognition.onstart = function() {
+        document.getElementById('question').placeholder = 'Listening...';
+    };
+    
+    recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById('question').value = transcript;
+    };
+    
+    recognition.onerror = function(event) {
+        alert('Speech recognition error: ' + event.error);
+    };
+    
+    recognition.start();
+}
+
+// Set default date and time
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.getElementById('due_date');
+    const timeInput = document.getElementById('due_time');
+    
+    if (dateInput && !dateInput.value) {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        dateInput.value = `${yyyy}-${mm}-${dd}`;
+    }
+    
+    if (timeInput && !timeInput.value) {
+        const now = new Date();
+        now.setHours(now.getHours() + 1);
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        timeInput.value = `${hh}:${min}`;
+    }
+    
+    // Handle AI answer speech synthesis
+    const answerText = document.getElementById('answer-text');
+    if (answerText && answerText.textContent.trim()) {
+        try {
+            const utterance = new SpeechSynthesisUtterance(answerText.textContent);
+            speechSynthesis.speak(utterance);
+        } catch(e) {
+            console.log('Speech synthesis not available');
+        }
+    }
+});
+</script>
+
+</body>
+</html>
